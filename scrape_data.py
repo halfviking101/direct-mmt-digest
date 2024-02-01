@@ -11,8 +11,8 @@ header = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36"
 }
 
-# url = "https://www.makemytrip.com/hotels/hotel-details/?hotelId=202209302002021632&_uCurrency=INR&checkin=01042024&checkout=01052024&city=CTJAI&country=IN&lat=26.93763&lng=75.78794&locusId=CTJAI&locusType=city&rank=1&regionNearByExp=3&roomStayQualifier=2e0e&rsc=1e2e0e&searchText=Treebo%20Trend%20The%20Royal%20CM&topHtlId=202209302002021632&mtkeys=-3007853608503926677"
-url = input("Enter URL: ")
+url = "https://www.makemytrip.com/hotels/hotel-details/?hotelId=202203101230288108&checkin=02012024&checkout=02022024"
+# url = input("Enter URL: ")
 
 # Getting data from MMT
 s = requests.Session()
@@ -37,11 +37,11 @@ mmtData = data["hotelDetail"]["staticDetail"]["hotelDetails"]
 
 # Getting the ID of hotel from the JSON map.
 with open("mmt_trb.json") as f:
-    ingo_to_cs = json.load(f)
+    mmt_trb = json.load(f)
 
-hotel_ingoId = mmtData["ingoId"]
+mmt_id = mmtData["id"]
 try:
-    hotel_id = ingo_to_cs[hotel_ingoId]
+    hotel_id = mmt_trb[mmt_id]
 except:
     print("This hotel is not listed in Treebo's Website.")
     sys.exit()

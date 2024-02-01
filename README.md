@@ -41,7 +41,7 @@ beautifulsoup4
 trycourier
 google-generativeai
 rich
-markdown2
+python-dateutil
 ```
 
 In order to setup a Courier account and get an API key, follow the instructions given on https://www.courier.com/docs/getting-started/quickstarts/python/
@@ -65,3 +65,11 @@ Follow the below steps to generate a Gemini API key:
 - After that, it will ask for the URL of hotel from MMT website.
 
 The script will now scrape content from the MMT url, fetch the hotel details from Treebo, send a prompt to Gemini with the data and generate a markdown report to be emailed.
+
+### Using Docker
+
+- Make sure you have the `GEMINI_API_KEY` and `COURIER_API_KEY` in your directory.
+- Run `docker build -t scraper-image .` to build the docker image.
+- `docker run --rm --name myscraper scraper-image python test_scraping.py` to test the scraping script.
+- `docker run --rm --name myscraper scraper-image python actions.py advik.singhania@hotelsuperhero.com` to run the gemini + mailing script.
+- After any code changes, make sure to build the docker image again.
