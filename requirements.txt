@@ -4,3 +4,4 @@ trycourier
 google-generativeai
 rich
 python-dateutil
+boto3
