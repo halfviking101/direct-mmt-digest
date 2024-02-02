@@ -1,8 +1,21 @@
 #!/usr/bin/env python3
 import google.generativeai as genai
 from trycourier import Courier
-import sys, time, os
+import sys, time, os, json
+import boto3
 from test_scraping import merged_data
+
+
+def get_secret(secret_name, region_name):
+    # Create a Secrets Manager client
+    client = boto3.client(service_name="secretsmanager", region_name=region_name)
+    try:
+        secret_value_response = client.get_secret_value(SecretId=secret_name)
+        return json.loads(secret_value_response["SecretString"])
+    except Exception as e:
+        print(e)
+
+    return {"error": "Could not fetch from Secrets Manager"}
 
 
 def filter_data(data_obj):
@@ -100,12 +113,18 @@ if __name__ == "__main__":
     else:
         recipient = {"email": email_ids[0]}
 
-    # Courier API Key provided as environment variable
-    courier_api = os.getenv("COURIER_API_KEY")
+    # Fetch secrets from AWS Secrets Manager
+    secret_name = "treebo/production/aps1-cluster/apps/shared-credentials/postgres"
+    region_name = "ap-south-1"
+    secrets = get_secret(secret_name, region_name)
+    if secrets.get("error"):
+        print(secrets["error"])
+        sys.exit()
+
+    courier_api = secrets["COURIER_API_KEY"]
     client = Courier(auth_token=courier_api)
 
-    # Gemini API Key provided as environment variable
-    gemini_api = os.getenv("GEMINI_API_KEY")
+    gemini_api = secrets["GEMINI_API_KEY"]
     try:
         genai.configure(api_key=gemini_api)
         model = genai.GenerativeModel("gemini-pro")
