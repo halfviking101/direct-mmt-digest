@@ -1,8 +1,7 @@
+#!/usr/bin/env python3
 import google.generativeai as genai
-from rich.console import Console
-from rich.markdown import Markdown
 from trycourier import Courier
-import sys, time
+import sys, time, os
 from test_scraping import merged_data
 
 
@@ -10,14 +9,10 @@ def filter_data(data_obj):
     filtered_merged_data = tuple()
 
     for data in data_obj:
-        # print(data)
-
         TrebLocationDict, MMTLocationDict = (
             data["trb"]["address"],
             data["mmt"]["locationDetail"],
         )
-        # print(TrebLocationDict)
-        # print(MMTLocationDict)
 
         TrebPolicies, MMTPolicies = "", ""
         TrebAmeneties, MMTAmeneties = "", ""
@@ -48,8 +43,7 @@ def filter_data(data_obj):
                 else:
                     MMTAmeneties += facilities["name"] + ","
 
-        # Treebo Data Processing ---------------------------------------
-
+        # ---- Treebo Data Processing ----
         for facil_dict in data["trb"]["facilities"]:
             TrebAmeneties += facil_dict["name"] + ","
 
@@ -85,39 +79,13 @@ def generate_reports(filtered_merge_data, model):
         prompt = "Generate a concise report by mentioning key points as YES or NO in tabular form for the difference between the data obtained from two different websites : "
         note = "1)DO not use the data from outside the information provided by me. 2) if data not avaialble print not specified: "
 
-        # nameResponse = model.generate_content(prompt + note + 'Treebo data : ' + TrebName + 'MMT data : ' + MMTName)
-        locationResponse = model.generate_content(
-            prompt
-            + note
-            + "Treebo data : "
-            + data["trb"]["location"]
-            + "MMT data : "
-            + data["mmt"]["location"]
-        )
-        policyResponse = model.generate_content(
-            prompt
-            + note
-            + "Treebo data : "
-            + data["trb"]["policies"]
-            + "MMT data : "
-            + data["mmt"]["policies"]
-        )
-        amenititesResponse = model.generate_content(
-            prompt
-            + note
-            + "Treebo data : "
-            + data["trb"]["amenities"]
-            + "MMT data : "
-            + data["mmt"]["amenities"]
-        )
+        locationResponse = model.generate_content(prompt + note + "Treebo data : " + data["trb"]["location"] + "MMT data : " + data["mmt"]["location"])
+        policyResponse = model.generate_content(prompt + note + "Treebo data : " + data["trb"]["policies"] + "MMT data : " + data["mmt"]["policies"])
+        amenititesResponse = model.generate_content(prompt + note + "Treebo data : " + data["trb"]["amenities"] + "MMT data : " + data["mmt"]["amenities"])
 
         report_data = "# Location\n\n" + str(locationResponse.text) + "\n"
         report_data += "\n# Policy\n\n" + str(policyResponse.text) + "\n"
         report_data += "\n# Amenities\n\n" + str(amenititesResponse.text) + "\n"
-
-        # Printing the report on terminal
-        # console = Console()
-        # console.print(Markdown(report_data))
 
         # Passing the data to the mailing script
         val = {"hotel_name": data["trb"]["name"], "report_data": report_data}
@@ -125,17 +93,21 @@ def generate_reports(filtered_merge_data, model):
 
 
 if __name__ == "__main__":
-    # Email Id of the recipient provided as command line argument
-    email_id = sys.argv[1]
-    with open("COURIER_API_KEY") as f:
-        auth_token = f.read()
+    # Email Ids of the recipient provided as environment variable
+    email_ids = list(filter(None, map(lambda s: s.strip(), os.getenv("EMAIL_ID").split(","))))
+    if len(email_ids) > 1:
+        recipient = [{"email": id} for id in email_ids]
+    else:
+        recipient = {"email": email_ids[0]}
 
-    client = Courier(auth_token=auth_token)
-    with open("GEMINI_API_KEY") as f:
-        api_key = f.read()
+    # Courier API Key provided as environment variable
+    courier_api = os.getenv("COURIER_API_KEY")
+    client = Courier(auth_token=courier_api)
 
+    # Gemini API Key provided as environment variable
+    gemini_api = os.getenv("GEMINI_API_KEY")
     try:
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=gemini_api)
         model = genai.GenerativeModel("gemini-pro")
     except:
         print("An error occured while connecting to Gemini AI.")
@@ -150,7 +122,7 @@ if __name__ == "__main__":
         try:
             resp = client.send_message(
                 message={
-                    "to": {"email": email_id},
+                    "to": recipient,
                     "template": "EKN5DXQEPB45NWG9FEYCRSV6Q6BJ",  # custom template for mail made in courier
                     "data": report,
                 }

@@ -68,8 +68,16 @@ The script will now scrape content from the MMT url, fetch the hotel details fro
 
 ### Using Docker
 
-- Make sure you have the `GEMINI_API_KEY` and `COURIER_API_KEY` in your directory.
-- Run `docker build -t scraper-image .` to build the docker image.
-- `docker run --rm --name myscraper scraper-image python test_scraping.py` to test the scraping script.
-- `docker run --rm --name myscraper scraper-image python actions.py advik.singhania@hotelsuperhero.com` to run the gemini + mailing script.
+- To build the docker image:
+  ```
+  docker build -t scraper-image .
+  ```
+- To run the scraping test script in the docker image:
+  ```
+  docker run --rm --name myscraper scraper-image python test_scraping.py
+  ```
+- To run the gemini + mailing script:
+  ```
+  docker run --rm --env COURIER_API_KEY=value --env GEMINI_API_KEY=value --env EMAIL_ID=values --env HOTEL_ID=values --name scraper halfviking/datascraper python actions.py
+  ```
 - After any code changes, make sure to build the docker image again.

@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-import sys
-import json
-import requests
-import time
+import sys, json, requests, time, os
 import concurrent.futures
 from bs4 import BeautifulSoup
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-header = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36"
-}
+header = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36"}
 
 current_date = datetime.now()
 check_in_date = (current_date + relativedelta(days=1)).strftime("%m%d%Y")
@@ -46,12 +41,7 @@ def send_requests(mmt_id, trb_id):
             data = json.loads(val.string[27:])
             break
 
-    # data = json.loads(sc_tags[1].string[27:])
-    if (
-        data is None
-        or data["hotelDetail"].get("staticDetail") is None
-        or data["hotelDetail"]["staticDetail"].get("hotelDetails") is None
-    ):
+    if data is None or data["hotelDetail"].get("staticDetail") is None:
         return {"status": 404, "url": mmt_url}
 
     mmtData = data["hotelDetail"]["staticDetail"]["hotelDetails"]
@@ -63,26 +53,22 @@ def send_requests(mmt_id, trb_id):
     return {"mmt": mmtData, "trb": trbData}
 
 
-with open("mmt_trb.json") as f:
-    mmt_trb = json.load(f)
+with open("trb_mmt.json") as f:
+    trb_mmt = json.load(f)
 
 success, fails = 0, 0
 start_time = time.time()
 merged_data = tuple()
 failed = []
 with concurrent.futures.ThreadPoolExecutor(max_workers=40) as tpe:
-    for batch in chunks(list(mmt_trb.items())[:5], 5):
-        ftu = {
-            tpe.submit(send_requests, mmt_id, trb_id): (mmt_id, trb_id)
-            for mmt_id, trb_id in batch
-        }
+    for batch in chunks(list(trb_mmt.items())[:5], 5):
+        ftu = {tpe.submit(send_requests, mmt_id, trb_id): (mmt_id, trb_id) for trb_id, mmt_id in batch}
 
         for f in concurrent.futures.as_completed(ftu):
             mmt_id, trb_id = ftu[f]
             data = f.result()
             if data.get("status") == 404:
-                # print("Failed for MMT", mmt_id, "and TRB", trb_id)
-                failed.append((mmt_id, trb_id))
+                failed.append((trb_id, mmt_id))
                 fails += 1
                 continue
             else:
