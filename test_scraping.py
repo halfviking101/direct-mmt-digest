@@ -56,25 +56,25 @@ def send_requests(mmt_id, trb_id):
 with open("trb_mmt.json") as f:
     trb_mmt = json.load(f)
 
-success, fails = 0, 0
+hotel_ids = set(filter(None, map(lambda s: s.strip(), os.getenv("HOTEL_ID").split(","))))
+batch = [(id, trb_mmt[id]) for id in hotel_ids if trb_mmt.get(id)]
 start_time = time.time()
 merged_data = tuple()
 failed = []
+success, fails = 0, 0
 with concurrent.futures.ThreadPoolExecutor(max_workers=40) as tpe:
-    for batch in chunks(list(trb_mmt.items())[:5], 5):
-        ftu = {tpe.submit(send_requests, mmt_id, trb_id): (mmt_id, trb_id) for trb_id, mmt_id in batch}
+    ftu = {tpe.submit(send_requests, mmt_id, trb_id): (mmt_id, trb_id) for trb_id, mmt_id in batch}
+    for f in concurrent.futures.as_completed(ftu):
+        mmt_id, trb_id = ftu[f]
+        data = f.result()
+        if data.get("status") == 404:
+            failed.append((trb_id, mmt_id))
+            fails += 1
+            continue
+        else:
+            success += 1
 
-        for f in concurrent.futures.as_completed(ftu):
-            mmt_id, trb_id = ftu[f]
-            data = f.result()
-            if data.get("status") == 404:
-                failed.append((trb_id, mmt_id))
-                fails += 1
-                continue
-            else:
-                success += 1
-
-            merged_data += (data,)
+        merged_data += (data,)
 
 print("fails:", fails, "success:", success)
 print("size:", sys.getsizeof(merged_data) / 1024, "KB")
