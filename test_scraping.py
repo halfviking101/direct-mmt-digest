@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-import sys, json, requests, time, os
+import sys, json, httpx, time, os
 import concurrent.futures
 from bs4 import BeautifulSoup
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 header = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36"}
+cookies = {"s_sess": "%20tp%3D3696%3B%20s_ppv%3Dlanding%25253Abrand%25253Ahomepage%25253Aindia-MHP%252C16%252C16%252C583%3B"}
 
 current_date = datetime.now()
 check_in_date = (current_date + relativedelta(days=1)).strftime("%m%d%Y")
 check_out_date = (current_date + relativedelta(days=2)).strftime("%m%d%Y")
 
-s = requests.Session()
 try:
-    s.get("https://www.makemytrip.com/", headers=header)
-    cookie = s.cookies.get_dict()
+    with httpx.Client(http2=True, headers=header, cookies=cookies) as client:
+        s = client.get(url="https://www.makemytrip.com/")
+
+    cookies = dict(s.cookies)
 except:
     print("An error occured while conencting to MMT")
     sys.exit(0)
@@ -29,7 +31,9 @@ def chunks(l, n):
 def send_requests(mmt_id, trb_id):
     mmt_url = f"https://www.makemytrip.com/hotels/hotel-details/?hotelId={mmt_id}&checkin={check_in_date}&checkout={check_out_date}"
     trb_url = f"https://www.treebo.com/api/v5/hotels/{trb_id}/details/"
-    response = s.get(mmt_url, cookies=cookie, headers=header)
+    with httpx.Client(http2=True, headers=header, cookies=cookies) as client:
+        response = client.get(url=mmt_url)
+
     soup = BeautifulSoup(response.content, "html.parser")
     if soup.title == "Site Maintenance":
         return {"status": 404, "url": mmt_url}
@@ -46,7 +50,7 @@ def send_requests(mmt_id, trb_id):
 
     mmtData = data["hotelDetail"]["staticDetail"]["hotelDetails"]
     try:
-        trbData = requests.get(trb_url).json()["data"]
+        trbData = httpx.get(trb_url).json()["data"]
     except:
         return {"status": 404, "url": trb_url}
 
