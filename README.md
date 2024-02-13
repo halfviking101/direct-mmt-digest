@@ -36,12 +36,13 @@ Objective is to, periodically, scrape content of our own properties from OTA (Ma
 
 It will install the following libraries for python:
 ```
-requests
+httpx[http2]
 beautifulsoup4
 trycourier
 google-generativeai
 rich
 python-dateutil
+boto3
 ```
 
 In order to setup a Courier account and get an API key, follow the instructions given on https://www.courier.com/docs/getting-started/quickstarts/python/
@@ -74,10 +75,10 @@ The script will now scrape content from the MMT url, fetch the hotel details fro
   ```
 - To run the scraping test script in the docker image:
   ```
-  docker run --rm --name myscraper scraper-image python test_scraping.py
+  docker run --rm --env HOTEL_ID=values --name myscraper scraper-image python test_scraping.py
   ```
 - To run the gemini + mailing script:
   ```
-  docker run --rm --env COURIER_API_KEY=value --env GEMINI_API_KEY=value --env EMAIL_ID=values --env HOTEL_ID=values --name scraper halfviking/datascraper python actions.py
+  docker run --rm --env COURIER_API_KEY=value --env GEMINI_API_KEY=value --env EMAIL_ID=values --env HOTEL_ID=values --name myscraper scraper-image python actions.py
   ```
 - After any code changes, make sure to build the docker image again.
