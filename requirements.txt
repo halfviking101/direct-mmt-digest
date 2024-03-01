@@ -5,3 +5,4 @@ google-generativeai
 rich
 python-dateutil
 boto3
+flask
