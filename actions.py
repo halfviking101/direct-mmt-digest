@@ -128,8 +128,9 @@ if __name__ == "__main__":
     try:
         genai.configure(api_key=gemini_api)
         model = genai.GenerativeModel("gemini-pro")
-    except:
+    except Exception as e:
         print("An error occured while connecting to Gemini AI.")
+        print(e)
         sys.exit()
 
     start_time = time.time()
